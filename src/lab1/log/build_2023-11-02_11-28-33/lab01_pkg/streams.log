@@ -1,0 +1,29 @@
+[1.388s] Invoking command in '/workspaces/SESARS_Labs/src/ros2_ws/src/lab01_pkg': PYTHONPATH=/workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/prefix_override:/workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/lab01_pkg build --build-base /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/build install --record /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/install.log --single-version-externally-managed
+[1.642s] running egg_info
+[1.643s] writing ../../build/lab01_pkg/lab01_pkg.egg-info/PKG-INFO
+[1.643s] writing dependency_links to ../../build/lab01_pkg/lab01_pkg.egg-info/dependency_links.txt
+[1.643s] writing entry points to ../../build/lab01_pkg/lab01_pkg.egg-info/entry_points.txt
+[1.643s] writing requirements to ../../build/lab01_pkg/lab01_pkg.egg-info/requires.txt
+[1.643s] writing top-level names to ../../build/lab01_pkg/lab01_pkg.egg-info/top_level.txt
+[1.645s] reading manifest file '../../build/lab01_pkg/lab01_pkg.egg-info/SOURCES.txt'
+[1.646s] writing manifest file '../../build/lab01_pkg/lab01_pkg.egg-info/SOURCES.txt'
+[1.647s] running build
+[1.647s] running build_py
+[1.647s] copying lab01_pkg/reset_node.py -> /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/build/lib/lab01_pkg
+[1.647s] running install
+[1.648s] /usr/lib/python3/dist-packages/setuptools/command/install.py:34: SetuptoolsDeprecationWarning: setup.py install is deprecated. Use build and pip and other standards-based tools.
+[1.648s]   warnings.warn(
+[1.648s] running install_lib
+[1.650s] copying /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/build/lib/lab01_pkg/reset_node.py -> /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages/lab01_pkg
+[1.651s] byte-compiling /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages/lab01_pkg/reset_node.py to reset_node.cpython-310.pyc
+[1.652s] running install_data
+[1.652s] running install_egg_info
+[1.654s] removing '/workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages/lab01_pkg-0.0.0-py3.10.egg-info' (and everything under it)
+[1.655s] Copying ../../build/lab01_pkg/lab01_pkg.egg-info to /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages/lab01_pkg-0.0.0-py3.10.egg-info
+[1.656s] running install_scripts
+[1.680s] Installing controller script to /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/lab01_pkg
+[1.680s] Installing controller_reset script to /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/lab01_pkg
+[1.680s] Installing localization script to /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/lab01_pkg
+[1.681s] Installing reset_node script to /workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/lab01_pkg
+[1.681s] writing list of installed files to '/workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/install.log'
+[1.717s] Invoked command in '/workspaces/SESARS_Labs/src/ros2_ws/src/lab01_pkg' returned '0': PYTHONPATH=/workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/prefix_override:/workspaces/SESARS_Labs/src/ros2_ws/install/lab01_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/lab01_pkg build --build-base /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/build install --record /workspaces/SESARS_Labs/src/ros2_ws/build/lab01_pkg/install.log --single-version-externally-managed
