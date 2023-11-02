@@ -2,3 +2,6 @@ build/*
 install/*
 log/*
 site/*
+src/lab/build*
+src/lab/install*
+src/lab/log*
