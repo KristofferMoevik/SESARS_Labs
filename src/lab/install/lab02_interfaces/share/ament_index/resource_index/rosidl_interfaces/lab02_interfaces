@@ -1,0 +1,6 @@
+action/MoveDistance.action
+action/MoveDistance.idl
+srv/ComputeTrajectory.idl
+srv/ComputeTrajectory.srv
+srv/ComputeTrajectory_Request.msg
+srv/ComputeTrajectory_Response.msg

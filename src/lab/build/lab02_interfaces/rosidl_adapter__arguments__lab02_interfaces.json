@@ -1,0 +1,7 @@
+{
+  "package_name": "lab02_interfaces",
+  "non_idl_tuples": [
+    "/workspaces/SESARS_Labs/src/lab/src/lab02_interfaces:srv/ComputeTrajectory.srv",
+    "/workspaces/SESARS_Labs/src/lab/src/lab02_interfaces:action/MoveDistance.action"
+  ]
+}

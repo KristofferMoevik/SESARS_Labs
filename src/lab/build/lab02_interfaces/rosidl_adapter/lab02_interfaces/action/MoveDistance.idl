@@ -1,0 +1,26 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from lab02_interfaces/action/MoveDistance.action
+// generated code does not contain a copyright notice
+
+
+module lab02_interfaces {
+  module action {
+    @verbatim (language="comment", text=
+      "Goal")
+    struct MoveDistance_Goal {
+      double distance;
+    };
+    @verbatim (language="comment", text=
+      "Result")
+    struct MoveDistance_Result {
+      double elapsed_time_s;
+
+      double traveled_distance;
+    };
+    @verbatim (language="comment", text=
+      "Feedback")
+    struct MoveDistance_Feedback {
+      double remaining_distance;
+    };
+  };
+};
