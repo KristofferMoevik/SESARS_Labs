@@ -20,6 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'turtle1_compute_trajectory = lab02_pkg.turtle1_compute_trajectory:main',
+            'turtle1_move_forward = lab02_pkg.turtle1_move_forward:main',
         ],
     },
 )
