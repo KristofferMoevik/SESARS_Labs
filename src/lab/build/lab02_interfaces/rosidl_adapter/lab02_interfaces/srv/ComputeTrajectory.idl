@@ -1,0 +1,25 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from lab02_interfaces/srv/ComputeTrajectory.srv
+// generated code does not contain a copyright notice
+
+
+module lab02_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct ComputeTrajectory_Request {
+      double x;
+
+      double y;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct ComputeTrajectory_Response {
+      @default (value=0.0)
+      double distance;
+
+      @default (value=0.0)
+      double direction;
+    };
+  };
+};
