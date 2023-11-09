@@ -1,0 +1,4 @@
+my_node:
+  ros__parameters:
+    scale_angular: 2.0
+    scale_linear: 0.5

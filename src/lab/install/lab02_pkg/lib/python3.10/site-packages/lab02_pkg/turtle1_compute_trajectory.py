@@ -15,9 +15,9 @@ class ComputeTrajectoryService(Node):
 
     def __init__(self):
         super().__init__('compute_trajectory_node')
-        self.srv = self.create_service(ComputeTrajectory, 'compute_trajectory', self.compute_trajectory_callback)
+        self.srv = self.create_service(ComputeTrajectory, '/turtle1/compute_trajectory', self.compute_trajectory_callback)
         self.__turtle_pose_subscriber_ = self.create_subscription(Pose, '/turtle1/pose', self.turtle_pose_subscriber_callback, 10)
-        self.__rotate_absolute_action_client = ActionClient(self, RotateAbsolute, '/turtle1/rotate_absolute')
+        #self.__rotate_absolute_action_client = ActionClient(self, RotateAbsolute, '/turtle1/rotate_absolute')
         self.turtle_pose = Pose()
 
     def turtle_pose_subscriber_callback(self, msg):
@@ -28,6 +28,8 @@ class ComputeTrajectoryService(Node):
     def compute_trajectory_callback(self, request, response):
         response.distance = self.get_distance_points(request.x, request.y, self.turtle_pose.x, self.turtle_pose.y)
         response.direction = self.get_angle_pose_point(self.turtle_pose.x, self.turtle_pose.y, self.turtle_pose.theta, request.x, request.y)
+        self.get_logger().info("direction: " + str(response.direction) + "  distance: " + str(response.distance))
+
         return response
 
     def get_angle_pose_point(self, tur_x, tur_y, tur_theta, req_x, req_y):
@@ -53,13 +55,13 @@ class ComputeTrajectoryService(Node):
             return np.arctan2(vector[1], vector[0])
     
         vector_1_to_2 = np.array([req_x - tur_x, req_y - tur_y])
-        self.get_logger().info("turtle position: x=" + str())
         angle = get_signed_angle_with_x_axis(vector_1_to_2)
 
-        goal_msg = RotateAbsolute.Goal()
-        goal_msg.theta = angle
-        self.__rotate_absolute_action_client.wait_for_server()
-        self.__rotate_absolute_action_client.send_goal_async(goal_msg)
+        # goal_msg = RotateAbsolute.Goal()
+        # goal_msg.theta = angle
+        # self.__rotate_absolute_action_client.wait_for_server()
+        # self.__rotate_absolute_action_client.send_goal_async(goal_msg)
+        
         return angle
     
     def get_distance_points(self, x1, y1, x2, y2):

@@ -1,4 +1,7 @@
 [console_scripts]
+rotate_absolute_action_client = lab02_pkg.rotate_absolute_action_client:main
 turtle1_compute_trajectory = lab02_pkg.turtle1_compute_trajectory:main
+turtle1_goal_generator = lab02_pkg.turtle1_goal_generator:main
+turtle1_goal_node = lab02_pkg.turtle1_goal_node:main
 turtle1_move_forward = lab02_pkg.turtle1_move_forward:main
 
