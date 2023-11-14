@@ -1,7 +1,6 @@
 from setuptools import find_packages, setup
-import os
 
-package_name = 'lab02_pkg'
+package_name = 'lab03_pkg'
 
 setup(
     name=package_name,
@@ -11,7 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/launch.py']),    ],
+    ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='ros',
@@ -21,11 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'turtle1_compute_trajectory = lab02_pkg.turtle1_compute_trajectory:main',
-            'turtle1_move_forward = lab02_pkg.turtle1_move_forward:main',
-            'turtle1_goal_node = lab02_pkg.turtle1_goal_node:main',
-            'turtle1_goal_generator = lab02_pkg.turtle1_goal_generator:main',
-            'rotate_absolute_action_client = lab02_pkg.rotate_absolute_action_client:main',
+            'controller_node = lab03_pkg.controller_node:main'
         ],
     },
 )

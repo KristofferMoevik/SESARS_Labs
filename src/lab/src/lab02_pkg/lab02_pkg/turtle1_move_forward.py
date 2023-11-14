@@ -1,106 +1,130 @@
-import time
-
-
 import rclpy
-from rclpy.action import ActionServer
 from rclpy.node import Node
+import rclpy.logging
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+from rclpy.action import ActionServer
+from rclpy.action.server import ServerGoalHandle
+from rcl_interfaces.msg import ParameterDescriptor
 
-from turtlesim.msg import Pose
-from geometry_msgs.msg import Twist 
 from lab02_interfaces.action import MoveDistance
+from turtlesim.msg import Pose
+from geometry_msgs.msg import Twist
+
+
 
 class MoveDistanceActionServer(Node):
-
     def __init__(self):
-        super().__init__('move_distance')
+        super().__init__("move_distance_action_server")
 
-        action_server_cb_group = ReentrantCallbackGroup()
-        subscription_cb_group = MutuallyExclusiveCallbackGroup()
+        # CALLBACK GROUPS
+        # Define a new callback group for the action server.
+        # The action server will be assigned to this group, while the subscribers, publishers and
+        # timers will be assigned to the default callback group (which is MutuallyExclusive)
+        self.action_server_group = ReentrantCallbackGroup()
+        self.topic_group = MutuallyExclusiveCallbackGroup()
 
-        self.__action_server = ActionServer(
+        # SUBSCRIBERS, PUBLISHERS, TIMERS...
+        # Subscribers and publishers can stay in the default group since they are non-blocking, to 
+        # do so just declare them as usual.
+        #
+        # You can also assign them explicitely to a MutuallyExclusiveCallbackGroup if you want to by
+        # passing the callback_group argument.
+        self.pose_subscriber = self.create_subscription(Pose, "pose", self.pose_callback, 10, callback_group=self.topic_group)
+        self.cmd_vel_publisher = self.create_publisher(Twist, "/turtle1/cmd_vel", 10, callback_group=self.topic_group)
+
+        # The action server must be in a different callback group since it is blocking.
+        # The action server callback will sleep at a fixed rate until the goal is completed, failed 
+        # or canceled. The action server will use a ReentrantCallbackGroup so that multiple goals 
+        # can be handled simultaneously.
+        self.action_server = ActionServer(
             self,
             MoveDistance,
-            'move_distance',
-            self.move_distance_callback, 
-            callback_group=action_server_cb_group)
+            "move_distance",
+            self.execute_action_callback,
+            callback_group=self.action_server_group,
+        )
+
+        # Moved distance
+        self.pose = Pose()
+
+        # PARAMETERS
+        speed_parameter_descriptor = ParameterDescriptor(description='This parameter sets the speed in m/s')
+        self.declare_parameter('speed_parameter', 0.5, speed_parameter_descriptor)
+
+        tolerance_parameter_descriptor = ParameterDescriptor(description='This parameter sets the tolerance of hitting the desired pose')
+        self.declare_parameter('tolerance_parameter', 0.5, tolerance_parameter_descriptor)
         
-        self.__turtle_pose_subscription = self.create_subscription(Pose, '/turtle1/pose', self.turtle_pose_subscriber_callback, 10, callback_group=subscription_cb_group)
+        # This rate object is used to sleep the control loop at a fixed rate in the action server callback
+        self.control_rate_hz = 1.0
+        self.control_rate = self.create_rate(self.control_rate_hz)
 
-        self.__turtle_cmd_publisher = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
+        self.get_logger().info(
+            "Move distance action server has been started, in namespace: "
+            + self.get_namespace()
+            + " ..."
+        )
 
-        self.__turtle_cmd_vel_timer = self.create_timer(0.1, self.turtle_cmd_vel_timer_callback)
+    def pose_callback(self, msg: Pose):
+        # Do somthing with the pose message
+        self.pose = msg
 
-        self.turtle_cmd_velocity = 0.0
-        self.turtle_pose = Pose()
-        self.turtle_moved_distance = 0
-        self.time_of_started_action = 0
+    def execute_action_callback(self, goal_handle: ServerGoalHandle):
+        '''
+        This function is called when a new goal is received by the action server.
+        Pay attention to return the correct result object, otherwise the action client will crash.
+        
+        Returns:
+            result {YourAction.Result} -- Result object
+        '''
+        self.get_logger().info("Executing goal to travel distance: " + str(goal_handle.request.distance) + " m")
 
-
-    def turtle_pose_subscriber_callback(self, msg):
-        self.turtle_pose = msg
-        return
-    
-    def turtle_cmd_vel_timer_callback(self):
-        msg = Twist()
-        msg.linear.x = float(self.turtle_cmd_velocity)
-        if msg.linear.x != 0:
-            self.__turtle_cmd_publisher.publish(msg)
-        self.turtle_moved_distance += (self.turtle_cmd_velocity / 10)
-        self.get_logger().info("turtle moved=" + str(self.turtle_moved_distance))
-
-        return
-
-    def move_distance_callback(self, goal_handle):
-        self.setpoint_moved_distance = goal_handle.request.distance
-        self.turtle_moved_distance = 0
-        self.goal_handle = goal_handle
-        self.feedback_timer = self.create_timer(0.2, self.feedback_timer_callback)
-
-        time_of_started_action = time.time()
-
-        while abs(self.turtle_moved_distance - self.setpoint_moved_distance) > 0.1:
-            self.turtle_cmd_velocity = 0.5
-        self.turtle_cmd_velocity = 0
-            
-        self.feedback_timer.destroy()
-
-        goal_handle.succeed()
-
+        feedback_msg = MoveDistance.Feedback()
         result = MoveDistance.Result()
-        result.elapsed_time_s = time.time() - time_of_started_action
-        result.traveled_distance = self.turtle_moved_distance
+
+
+        # Create a condtion to break the control loop, it should be updated at each iteration
+        elapsed_time_s = 0.0
+        traveled_distance = 0.0
+
+        speed = float(self.get_parameter('speed_parameter').value)
+        tolerance = float(self.get_parameter('tolerance_parameter').value)
         
-        self.turtle_cmd_velocity = 0.0
-        self.turtle_pose = Pose()
-        self.turtle_moved_distance = 0
-        self.time_of_started_action = 0
+        distance_from_goal = goal_handle.request.distance        
+        while True: #distance_from_goal < 0.1:
+            # Execute the control loop at a fixed rate
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = speed
+            self.get_logger().info("Executing goal with speed: " + str(cmd_vel_msg.linear.x))
+            self.cmd_vel_publisher.publish(cmd_vel_msg)
+            feedback_msg.remaining_distance = distance_from_goal
+            goal_handle.publish_feedback(feedback_msg)
+
+            elapsed_time_s += 1/self.control_rate_hz
+            traveled_distance += speed * (1/self.control_rate_hz)
+
+            self.control_rate.sleep()
+            distance_from_goal = goal_handle.request.distance - traveled_distance
+            if distance_from_goal < tolerance:
+                break
+
+        # Result
+        result.elapsed_time_s = elapsed_time_s
+        result.traveled_distance = traveled_distance
+
+        # Notify the action client that the goal has been completed
+        goal_handle.succeed()
 
         return result
 
-    def feedback_timer_callback(self):
-        feedback_msg = MoveDistance.Feedback()
-        feedback_msg.remaining_distance = self.setpoint_moved_distance - self.turtle_moved_distance
-        self.goal_handle.publish_feedback(feedback_msg)
-
-
-
 
 def main(args=None):
-    rclpy.init()
+    rclpy.init(args=args)
     node = MoveDistanceActionServer()
     executor = MultiThreadedExecutor()
-    executor.add_node(node)
-
     try:
-        node.get_logger().info('Beginning client, shut down with CTRL-C')
-        executor.spin()
+        rclpy.spin(node, executor=executor)
     except KeyboardInterrupt:
-        node.get_logger().info('Keyboard interrupt, shutting down.\n')
-    node.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+        pass
+    finally:
+        rclpy.try_shutdown()

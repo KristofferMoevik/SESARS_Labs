@@ -15,33 +15,31 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='turtlesim',
-            namespace='turtlesim1',
+            namespace='',
             executable='turtlesim_node',
             name='turtlesim_node'
         ),
         Node(
-            package='turtlesim',
-            namespace='turtlesim2',
-            executable='turtle_teleop_key',
-            name='turtle_teleop_key',
-            prefix=["xterm -e"]
-        ),
-        Node(
             package='lab02_pkg',
-            namespace='lab02_pkg',
+            namespace='',
             executable='turtle1_move_forward',
             name='turtle1_move_forward',
+            parameters=[config_path]
         ),
         Node(
             package='lab02_pkg',
-            namespace='lab02_pkg',
-            executable='turtle1_goal_generator',
-            name='turtle1_goal_generator',
-        ),
-        Node(
-            package='lab02_pkg',
-            namespace='lab02_pkg',
+            namespace='',
             executable='turtle1_compute_trajectory',
             name='turtle1_compute_trajectory'
-        )
+        ),
+        Node(
+            package='lab02_pkg',
+            namespace='',
+            executable='turtle1_goal_node',
+            name='turtle1_goal_node',
+        ),
+        # ExecuteProcess(
+        #     cmd=['xterm', '-e', 'ros2 run turtlesim turtle_teleop_key'],
+        #     output='screen'
+        # ),
     ])
