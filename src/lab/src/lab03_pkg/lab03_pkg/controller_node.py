@@ -127,19 +127,13 @@ def get_direction_to_go_when_hitting_wall(point_cloud_msg):
         return "left"
     
 
-def check_if_goal_is_reached(odometry, goal, threshold):
-    odom_position = np.array([odometry.pose.pose.position.x, odometry.pose.pose.position.y, odometry.pose.pose.position.z])
-    goal_position = np.array(goal)
-    if np.linalg.norm(odom_position - goal_position) < threshold:
-        return True
-    else:
-        return False
+
 
 
 class Controller(Node):
 
-        def __init__(self):
-                super().__init__('turtlebot3_controller')
+        def __init__(self, parameter_overrides=[]):
+                super().__init__('turtlebot3_controller', parameter_overrides=parameter_overrides)
                 subscribers_cb_group = MutuallyExclusiveCallbackGroup()
                 publishers_cb_group = MutuallyExclusiveCallbackGroup()
                 controller_cb_group = MutuallyExclusiveCallbackGroup()
@@ -196,9 +190,16 @@ class Controller(Node):
                         self.close_to_wall = True
                 else:
                         self.close_to_wall = False
+        def check_if_goal_is_reached(self, odometry, goal, threshold):
+                odom_position = np.array([odometry.pose.pose.position.x, odometry.pose.pose.position.y])
+                goal_position = np.array([goal[0], goal[1]])
+                if np.linalg.norm(odom_position - goal_position) < threshold:
+                        return True
+                else:
+                        return False
 
         def odometry_callback(self, msg):
-                self.reached_goal = check_if_goal_is_reached(msg, self.goal, 1.0)
+                self.reached_goal = self.check_if_goal_is_reached(msg, self.goal, 1.0)
                 self.odometry = msg    
 
 
@@ -233,10 +234,10 @@ class Controller(Node):
                                 self.state = "GO FORWARD"
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
 
-                if self.returning_home and check_if_goal_is_reached(self.odometry, [0,0,0], threshold):
+                if self.returning_home and self.check_if_goal_is_reached(self.odometry, [0,0,0], 1.0):
                         self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
                         self.get_logger().info("HOME REACHED")
-                        if self.returning_home and check_if_goal_is_reached(self.odometry, [0,0,0], threshold):
+                        if self.returning_home and self.check_if_goal_is_reached(self.odometry, [0,0,0], 1.0):
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
                                 self.get_logger().info("HOME REACHED")
                                 self.destroy_node()
