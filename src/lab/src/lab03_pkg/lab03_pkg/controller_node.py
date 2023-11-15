@@ -123,7 +123,7 @@ class Controller(Node):
                 self.declare_parameter('speed_parameter', 0.5, ParameterDescriptor(description='This parameter sets the speed in m/s'))
                 self.declare_parameter('turn_speed_parameter', 0.2, ParameterDescriptor(description='This parameter sets the turning speed'))
                 self.declare_parameter('close_to_wall_threshold', 0.5, ParameterDescriptor(description='This parameter sets the speed in m/s'))
-                self.declare_parameter('control_loop_speed', 0.5, ParameterDescriptor(description='This parameter sets the period of the control loop in seconds'))
+                self.declare_parameter('control_loop_speed', 0.1, ParameterDescriptor(description='This parameter sets the period of the control loop in seconds'))
                 
                 subscribers_cb_group = MutuallyExclusiveCallbackGroup()
                 publishers_cb_group = MutuallyExclusiveCallbackGroup()
