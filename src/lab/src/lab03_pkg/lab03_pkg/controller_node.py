@@ -49,12 +49,6 @@ def remove_points_behind_robot(point_cloud_msg):
     return point_cloud_only_points_front
 
 
-    # Create new PointCloud2 message with filtered points
-    point_cloud_point_furthest_away = create_point_cloud2([point_furthest_away.tolist()], frame_id=point_cloud_msg.header.frame_id)
-
-    return point_cloud_point_furthest_away
-
-
 def find_point_closest_to_robot(point_cloud_msg, angle_threshold=math.pi/4):
     point_closest = np.array([np.inf,np.inf,np.inf])
     for point in pc2.read_points(point_cloud_msg, skip_nans=True, field_names=("x", "y", "z")):
@@ -64,18 +58,8 @@ def find_point_closest_to_robot(point_cloud_msg, angle_threshold=math.pi/4):
         if np.linalg.norm(point_vector) < np.linalg.norm(point_closest):
             point_closest = point_vector
 
-    # Create new PointCloud2 message with filtered points
-    point_cloud_point_furthest_away = create_point_cloud2([point_closest.tolist()], frame_id=point_cloud_msg.header.frame_id)
+    return np.linalg.norm(point_closest)        
 
-    return point_cloud_point_furthest_away        
-
-
-def get_direction_off_point_furthest_away_from_robot(point_cloud_msg):
-    point = pc2.read_points(point_cloud_msg, skip_nans=True, field_names=("x", "y", "z"))[0]
-    if point[1] > 0:
-        return "left"
-    else:
-        return "right"
 
 
 def get_distance_to_closest_point(point_cloud_msg):
@@ -134,28 +118,29 @@ class Controller(Node):
 
         def __init__(self, parameter_overrides=[]):
                 super().__init__('turtlebot3_controller', parameter_overrides=parameter_overrides)
+                
+                # PARAMETERS
+                self.declare_parameter('speed_parameter', 0.5, ParameterDescriptor(description='This parameter sets the speed in m/s'))
+                self.declare_parameter('turn_speed_parameter', 0.2, ParameterDescriptor(description='This parameter sets the turning speed'))
+                self.declare_parameter('close_to_wall_threshold', 0.5, ParameterDescriptor(description='This parameter sets the speed in m/s'))
+                self.declare_parameter('control_loop_speed', 0.5, ParameterDescriptor(description='This parameter sets the period of the control loop in seconds'))
+                
                 subscribers_cb_group = MutuallyExclusiveCallbackGroup()
                 publishers_cb_group = MutuallyExclusiveCallbackGroup()
                 controller_cb_group = MutuallyExclusiveCallbackGroup()
+                
                 self.laser_scan_subscriber = self.create_subscription(LaserScan, '/scan', self.laser_scan_callback, 10, callback_group=subscribers_cb_group)
                 self.odometry_subscriber = self.create_subscription(Odometry, '/diff_drive_controller/odom', self.odometry_callback, 10, callback_group=subscribers_cb_group)
+                
                 self.cmd_velocity_publisher = self.create_publisher(Twist, '/cmd_vel', 10, callback_group=publishers_cb_group)
                 self.point_cloud_publisher = self.create_publisher(PointCloud2, '/point_cloud', 10, callback_group=publishers_cb_group)
                 self.point_cloud_point_furthest_away_publisher = self.create_publisher(PointCloud2, '/point_cloud_point_furthest_away', 10, callback_group=publishers_cb_group)
                 self.point_cloud_point_closest_publisher = self.create_publisher(PointCloud2, '/point_cloud_point_closest', 10, callback_group=publishers_cb_group)
+                
                 self.direction_of_furthest_away_point_publisher = self.create_publisher(String, '/direction_of_furthest_away_point', 10, callback_group=publishers_cb_group)
-                self.controller_loop = self.create_timer(0.1, self.controller_callback, callback_group=controller_cb_group)
+                self.controller_loop = self.create_timer(float(self.get_parameter('control_loop_speed').value), self.controller_callback, callback_group=controller_cb_group)
+                
                 self.laser_projector = lg.LaserProjection()
-
-                # PARAMETERS
-                speed_parameter_descriptor = ParameterDescriptor(description='This parameter sets the speed in m/s')
-                self.declare_parameter('speed_parameter', 0.5, speed_parameter_descriptor)
-
-                turn_speed_parameter_descriptor = ParameterDescriptor(description='This parameter sets the turning speed')
-                self.declare_parameter('turn_speed_parameter', 0.2, speed_parameter_descriptor)
-
-                close_to_wall_threshold_parameter_descriptor = ParameterDescriptor(description='This parameter sets the speed in m/s')
-                self.declare_parameter('close_to_wall_threshold', 0.5, speed_parameter_descriptor)
 
                 self.odometry = Odometry()
                 self.close_to_wall = False
@@ -176,15 +161,13 @@ class Controller(Node):
                                 laser_scan.ranges[index] = laser_scan_max_range-0.001 # must be a little smaller than the max range
                 point_cloud = self.laser_projector.projectLaser(laser_scan)
                 point_cloud_only_front = remove_points_behind_robot(point_cloud)
-                point_closest_to_robot = find_point_closest_to_robot(point_cloud_only_front, angle_threshold=math.pi/4)
-
-
-                self.point_cloud_publisher.publish(point_cloud_only_front)
-                self.point_cloud_point_closest_publisher.publish(point_closest_to_robot)
                 self.direction_of_furthest_away_point = get_direction_to_go_when_hitting_wall(point_cloud_only_front)
-                self.direction_of_furthest_away_point_publisher.publish(String(data=self.direction_of_furthest_away_point))
 
-                self.distance_to_closest_point = get_distance_to_closest_point(point_closest_to_robot)
+                # For debugging
+                # self.point_cloud_publisher.publish(point_cloud_only_front)
+                # self.direction_of_furthest_away_point_publisher.publish(String(data=self.direction_of_furthest_away_point))
+
+                self.distance_to_closest_point = find_point_closest_to_robot(point_cloud_only_front)
 
                 if self.distance_to_closest_point < self.get_parameter('close_to_wall_threshold').value:
                         self.close_to_wall = True
@@ -200,6 +183,7 @@ class Controller(Node):
 
         def odometry_callback(self, msg):
                 self.reached_goal = self.check_if_goal_is_reached(msg, self.goal, 1.0)
+                #self.get_logger().info("reached goal: " + str(self.reached_goal))
                 self.odometry = msg    
 
 
@@ -214,7 +198,6 @@ class Controller(Node):
                         self.state = "TURN TO GOAL ANGLE"
                         self.returning_home = True
                         self.turning_setpoint = self.goal[2]
-                
                 if self.state == "TURN TO GOAL ANGLE":
                         quat = [self.odometry.pose.pose.orientation.x, self.odometry.pose.pose.orientation.y, self.odometry.pose.pose.orientation.z, self.odometry.pose.pose.orientation.w]
                         _, _, yaw = tf_transformations.euler_from_quaternion(quat)
@@ -224,7 +207,6 @@ class Controller(Node):
                                 self.state = "TURN TO GO HOME"
                                 self.turning_setpoint = - math.pi/2
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
-
                 if self.state == "TURN TO GO HOME":
                         quat = [self.odometry.pose.pose.orientation.x, self.odometry.pose.pose.orientation.y, self.odometry.pose.pose.orientation.z, self.odometry.pose.pose.orientation.w]
                         _, _, yaw = tf_transformations.euler_from_quaternion(quat)
@@ -233,7 +215,6 @@ class Controller(Node):
                         if 0.01 > abs(angle_between_two_angles(yaw, self.turning_setpoint)):
                                 self.state = "GO FORWARD"
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
-
                 if self.returning_home and self.check_if_goal_is_reached(self.odometry, [0,0,0], 1.0):
                         self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
                         self.get_logger().info("HOME REACHED")
@@ -242,7 +223,6 @@ class Controller(Node):
                                 self.get_logger().info("HOME REACHED")
                                 self.destroy_node()
                                 rclpy.shutdown()
-
                 if self.state == "GO FORWARD":
                         self.get_logger().info(self.state)
                         self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
