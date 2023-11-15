@@ -81,7 +81,7 @@ def find_point_closest_to_robot(point_cloud_msg, angle_threshold=math.pi/4):
     return point_cloud_point_furthest_away        
 
 
-def get_direction_off_closes_point_to_robot(point_cloud_msg):
+def get_direction_off_point_furthest_away_from_robot(point_cloud_msg):
     point = pc2.read_points(point_cloud_msg, skip_nans=True, field_names=("x", "y", "z"))[0]
     if point[1] > 0:
         return "left"
@@ -167,7 +167,7 @@ class Controller(Node):
                 self.point_cloud_publisher.publish(point_cloud_only_front)
                 self.point_cloud_point_furthest_away_publisher.publish(point_furthest_away)
                 self.point_cloud_point_closest_publisher.publish(point_closest_to_robot)
-                self.direction_of_furthest_away_point = get_direction_off_closes_point_to_robot(point_furthest_away)
+                self.direction_of_furthest_away_point = get_direction_off_point_furthest_away_from_robot(point_furthest_away)
                 self.direction_of_furthest_away_point_publisher.publish(String(data=self.direction_of_furthest_away_point))
 
                 self.distance_to_closest_point = get_distance_to_closest_point(point_closest_to_robot)
