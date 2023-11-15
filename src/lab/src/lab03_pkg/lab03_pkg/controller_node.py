@@ -120,6 +120,24 @@ def angle_between_two_angles(angle1, angle2):
 
     return angle
 
+
+def get_direction_to_go_when_hitting_wall(point_cloud_msg):
+    sum_distance_to_points_left = 0
+    sum_distance_to_points_right = 0
+    for point in pc2.read_points(point_cloud_msg, skip_nans=False, field_names=("x", "y", "z")):
+        point_vector = np.array([point[0], point[1], point[2]])
+        if point_vector[1] > 0:
+                sum_distance_to_points_left += np.linalg.norm(point_vector)
+        if point_vector[1] < 0:
+                sum_distance_to_points_right += np.linalg.norm(point_vector)
+    if sum_distance_to_points_left > sum_distance_to_points_right:
+        return "left"
+    if sum_distance_to_points_left < sum_distance_to_points_right:
+        return "right"
+    else:
+        return "left"
+
+
 class Controller(Node):
 
         def __init__(self):
@@ -153,11 +171,14 @@ class Controller(Node):
                 self.turning_setpoint = None
                 self.distance_to_closest_point = None
 
+                self.goal = [6.5, 2.5, math.pi/2]
+                self.home = [0, 0, 0]
+
         def laser_scan_callback(self, msg):
                 laser_scan = msg
                 laser_scan_max_range = laser_scan.range_max
                 for index, distance in enumerate(laser_scan_msg.ranges):
-                        if distance == float('inf'):
+                        if str(float(distance)) == str(float('inf')):
                                 laser_scan.ranges[index] = laser_scan_max_range
                 point_cloud = self.laser_projector.projectLaser(laser_scan)
                 point_cloud_only_front = remove_points_behind_robot(point_cloud)
@@ -167,7 +188,7 @@ class Controller(Node):
                 self.point_cloud_publisher.publish(point_cloud_only_front)
                 self.point_cloud_point_furthest_away_publisher.publish(point_furthest_away)
                 self.point_cloud_point_closest_publisher.publish(point_closest_to_robot)
-                self.direction_of_furthest_away_point = get_direction_off_point_furthest_away_from_robot(point_furthest_away)
+                self.direction_of_furthest_away_point = get_direction_to_go_when_hitting_wall(point_cloud_only_front)
                 self.direction_of_furthest_away_point_publisher.publish(String(data=self.direction_of_furthest_away_point))
 
                 self.distance_to_closest_point = get_distance_to_closest_point(point_closest_to_robot)
@@ -179,6 +200,8 @@ class Controller(Node):
 
         def odometry_callback(self, msg):
                 self.odometry = msg    
+
+
 
         def controller_callback(self):
                 speed = float(self.get_parameter('speed_parameter').value)
@@ -225,6 +248,8 @@ class Controller(Node):
                         if 0.01 > abs(angle_between_two_angles(yaw, self.turning_setpoint)):
                                 self.state = "GO FORWARD"
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
+                if 
+                
 
 
 

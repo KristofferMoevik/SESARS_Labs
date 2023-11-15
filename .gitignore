@@ -5,3 +5,4 @@ site/*
 src/lab/build*
 src/lab/install*
 src/lab/log*
+bags/*
