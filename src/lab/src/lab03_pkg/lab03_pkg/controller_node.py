@@ -49,17 +49,6 @@ def remove_points_behind_robot(point_cloud_msg):
     return point_cloud_only_points_front
 
 
-def find_point_furthest_away_from_robot(point_cloud_msg):
-    point_furthest_away = np.array([0,0,0])
-    for point in pc2.read_points(point_cloud_msg, skip_nans=False, field_names=("x", "y", "z")):
-        if point[0]
-        y = point[1]
-        z = point[2]
-        point_vector = np.array([point[0], point[1], point[2]])
-        if np.linalg.norm(point_vector) > np.linalg.norm(point_furthest_away):
-            point_furthest_away = point_vector
-        
-
     # Create new PointCloud2 message with filtered points
     point_cloud_point_furthest_away = create_point_cloud2([point_furthest_away.tolist()], frame_id=point_cloud_msg.header.frame_id)
 
@@ -127,15 +116,24 @@ def get_direction_to_go_when_hitting_wall(point_cloud_msg):
     for point in pc2.read_points(point_cloud_msg, skip_nans=False, field_names=("x", "y", "z")):
         point_vector = np.array([point[0], point[1], point[2]])
         if point_vector[1] > 0:
-                sum_distance_to_points_left += np.linalg.norm(point_vector)
+                sum_distance_to_points_left += np.linalg.norm(point_vector)**2
         if point_vector[1] < 0:
-                sum_distance_to_points_right += np.linalg.norm(point_vector)
+                sum_distance_to_points_right += np.linalg.norm(point_vector)**2
     if sum_distance_to_points_left > sum_distance_to_points_right:
         return "left"
     if sum_distance_to_points_left < sum_distance_to_points_right:
         return "right"
     else:
         return "left"
+    
+
+def check_if_goal_is_reached(odometry, goal, threshold):
+    odom_position = np.array([odometry.pose.pose.position.x, odometry.pose.pose.position.y, odometry.pose.pose.position.z])
+    goal_position = np.array(goal)
+    if np.linalg.norm(odom_position - goal_position) < threshold:
+        return True
+    else:
+        return False
 
 
 class Controller(Node):
@@ -173,20 +171,21 @@ class Controller(Node):
 
                 self.goal = [6.5, 2.5, math.pi/2]
                 self.home = [0, 0, 0]
+                self.reached_goal = False
+                self.returning_home = False
 
         def laser_scan_callback(self, msg):
                 laser_scan = msg
                 laser_scan_max_range = laser_scan.range_max
-                for index, distance in enumerate(laser_scan_msg.ranges):
-                        if str(float(distance)) == str(float('inf')):
-                                laser_scan.ranges[index] = laser_scan_max_range
+                for index, distance in enumerate(laser_scan.ranges):
+                        if str(distance) == str('inf'):
+                                laser_scan.ranges[index] = laser_scan_max_range-0.001 # must be a little smaller than the max range
                 point_cloud = self.laser_projector.projectLaser(laser_scan)
                 point_cloud_only_front = remove_points_behind_robot(point_cloud)
                 point_closest_to_robot = find_point_closest_to_robot(point_cloud_only_front, angle_threshold=math.pi/4)
-                point_furthest_away = find_point_furthest_away_from_robot(point_cloud_only_front)
+
 
                 self.point_cloud_publisher.publish(point_cloud_only_front)
-                self.point_cloud_point_furthest_away_publisher.publish(point_furthest_away)
                 self.point_cloud_point_closest_publisher.publish(point_closest_to_robot)
                 self.direction_of_furthest_away_point = get_direction_to_go_when_hitting_wall(point_cloud_only_front)
                 self.direction_of_furthest_away_point_publisher.publish(String(data=self.direction_of_furthest_away_point))
@@ -199,6 +198,7 @@ class Controller(Node):
                         self.close_to_wall = False
 
         def odometry_callback(self, msg):
+                self.reached_goal = check_if_goal_is_reached(msg, self.goal, 1.0)
                 self.odometry = msg    
 
 
@@ -206,6 +206,42 @@ class Controller(Node):
         def controller_callback(self):
                 speed = float(self.get_parameter('speed_parameter').value)
                 turn_speed = float(self.get_parameter('turn_speed_parameter').value)
+
+                if self.reached_goal and not self.returning_home:
+                        self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
+                        self.get_logger().info("GOAL REACHED")
+                        self.state = "TURN TO GOAL ANGLE"
+                        self.returning_home = True
+                        self.turning_setpoint = self.goal[2]
+                
+                if self.state == "TURN TO GOAL ANGLE":
+                        quat = [self.odometry.pose.pose.orientation.x, self.odometry.pose.pose.orientation.y, self.odometry.pose.pose.orientation.z, self.odometry.pose.pose.orientation.w]
+                        _, _, yaw = tf_transformations.euler_from_quaternion(quat)
+                        self.get_logger().info(self.state + "   yaw:" + str(yaw) + "   yawsetpoint:" + str(self.turning_setpoint))
+                        self.cmd_velocity_publisher.publish(Twist(angular=Vector3(z=-turn_speed)))
+                        if 0.01 > abs(angle_between_two_angles(yaw, self.turning_setpoint)):
+                                self.state = "TURN TO GO HOME"
+                                self.turning_setpoint = - math.pi/2
+                                self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
+
+                if self.state == "TURN TO GO HOME":
+                        quat = [self.odometry.pose.pose.orientation.x, self.odometry.pose.pose.orientation.y, self.odometry.pose.pose.orientation.z, self.odometry.pose.pose.orientation.w]
+                        _, _, yaw = tf_transformations.euler_from_quaternion(quat)
+                        self.get_logger().info(self.state + "   yaw:" + str(yaw) + "   yawsetpoint:" + str(self.turning_setpoint))
+                        self.cmd_velocity_publisher.publish(Twist(angular=Vector3(z=-turn_speed)))
+                        if 0.01 > abs(angle_between_two_angles(yaw, self.turning_setpoint)):
+                                self.state = "GO FORWARD"
+                                self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
+
+                if self.returning_home and check_if_goal_is_reached(self.odometry, [0,0,0], threshold):
+                        self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
+                        self.get_logger().info("HOME REACHED")
+                        if self.returning_home and check_if_goal_is_reached(self.odometry, [0,0,0], threshold):
+                                self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=0.0)))
+                                self.get_logger().info("HOME REACHED")
+                                self.destroy_node()
+                                rclpy.shutdown()
+
                 if self.state == "GO FORWARD":
                         self.get_logger().info(self.state)
                         self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
@@ -248,7 +284,6 @@ class Controller(Node):
                         if 0.01 > abs(angle_between_two_angles(yaw, self.turning_setpoint)):
                                 self.state = "GO FORWARD"
                                 self.cmd_velocity_publisher.publish(Twist(linear=Vector3(x=speed)))
-                if 
                 
 
 
