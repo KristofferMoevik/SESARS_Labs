@@ -91,7 +91,7 @@ class MoveDistanceActionServer(Node):
         tolerance = float(self.get_parameter('tolerance_parameter').value)
         
         distance_from_goal = goal_handle.request.distance        
-        while True: #distance_from_goal < 0.1:
+        while True:
             # Execute the control loop at a fixed rate
             cmd_vel_msg = Twist()
             cmd_vel_msg.linear.x = speed

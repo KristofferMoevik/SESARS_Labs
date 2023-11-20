@@ -13,3 +13,5 @@ sudo apt install -y xterm
 
 sudo apt install ros-humble-tf-transformations
 sudo pip3 install transforms3d
+
+sudo apt install plotjuggler
