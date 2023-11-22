@@ -33,12 +33,12 @@ def generate_launch_description():
             executable='turtle1_compute_trajectory',
             name='turtle1_compute_trajectory'
         ),
-        # Node(
-        #     package='lab02_pkg',
-        #     namespace='',
-        #     executable='turtle1_goal_node',
-        #     name='turtle1_goal_node',
-        # ),
+        Node(
+            package='lab02_pkg',
+            namespace='',
+            executable='turtle1_goal_node',
+            name='turtle1_goal_node',
+        ),
         Node(
             package='turtlesim', 
             executable='turtle_teleop_key',

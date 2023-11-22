@@ -48,6 +48,7 @@ class GoalGeneratorActionClient(Node):
         # Create an ActionClient instance
         self.move_forward_client = ActionClient(self, MoveDistance, "move_distance")
 
+        self.goal_publisher = self.create_publisher(Pose, "/turtle1/goal", 10)
 
         # Example to set the log level from a parameter
         log_level = self.declare_parameter("log_level", "info")
@@ -62,7 +63,7 @@ class GoalGeneratorActionClient(Node):
         '''
         feedback = feedback_msg.feedback
         # the throttle duration is used to limit the rate at which the message is printed
-        self.get_logger().info(f"Remaining: {feedback.remaining}", throttle_duration_sec=1.0)
+        self.get_logger().info(f"Remaining turn: {feedback.remaining}", throttle_duration_sec=1.0)
 
     def move_forward_get_feedback(self, feedback_msg):
         '''
@@ -70,7 +71,7 @@ class GoalGeneratorActionClient(Node):
         '''
         feedback = feedback_msg.feedback
         # the throttle duration is used to limit the rate at which the message is printed
-        self.get_logger().info(f"Remaining: {feedback.remaining_distance}", throttle_duration_sec=1.0)
+        self.get_logger().info(f"Remaining distance: {feedback.remaining_distance}", throttle_duration_sec=1.0)
 
     # Async call of send goal function (call anction server)
     async def send_goal(self, client: ActionClient, goal, feedback_callback):
@@ -134,6 +135,8 @@ async def run(args, loop):
     while True:
         goal = get_a_goal()
 
+        goal_generator.goal_publisher.publish(Pose(x=goal[0], y=goal[1], theta=goal[2]))
+
         goal_generator.get_logger().info("Sending goal: " + str(goal))
 
         # Example of calling a SERVICE using async/await
@@ -179,7 +182,7 @@ async def run(args, loop):
             )
         )
 
-        goal_generator.get_logger().info("All goals completed! Shutting down...")
+    goal_generator.get_logger().info("All goals completed! Shutting down...")
     spin_task.cancel()
 
     ################################################################################################
