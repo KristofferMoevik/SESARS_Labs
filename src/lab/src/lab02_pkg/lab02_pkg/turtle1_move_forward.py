@@ -53,7 +53,7 @@ class MoveDistanceActionServer(Node):
         self.declare_parameter('speed_parameter', 0.5, speed_parameter_descriptor)
 
         tolerance_parameter_descriptor = ParameterDescriptor(description='This parameter sets the tolerance of hitting the desired pose')
-        self.declare_parameter('tolerance_parameter', 0.5, tolerance_parameter_descriptor)
+        self.declare_parameter('tolerance_parameter', 0.2, tolerance_parameter_descriptor)
         
         # This rate object is used to sleep the control loop at a fixed rate in the action server callback
         self.control_rate_hz = 1.0

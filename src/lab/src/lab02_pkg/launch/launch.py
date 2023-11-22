@@ -5,6 +5,8 @@ from launch.actions import ExecuteProcess
 from ament_index_python.packages import get_package_share_directory
 import os
 
+
+
 def generate_launch_description():
     config_path = os.path.join(
         get_package_share_directory('lab02_pkg'),
@@ -21,7 +23,6 @@ def generate_launch_description():
         ),
         Node(
             package='lab02_pkg',
-            namespace='',
             executable='turtle1_move_forward',
             name='turtle1_move_forward',
             parameters=[config_path]
@@ -32,14 +33,18 @@ def generate_launch_description():
             executable='turtle1_compute_trajectory',
             name='turtle1_compute_trajectory'
         ),
-        Node(
-            package='lab02_pkg',
-            namespace='',
-            executable='turtle1_goal_node',
-            name='turtle1_goal_node',
-        ),
-        # ExecuteProcess(
-        #     cmd=['xterm', '-e', 'ros2 run turtlesim turtle_teleop_key'],
-        #     output='screen'
+        # Node(
+        #     package='lab02_pkg',
+        #     namespace='',
+        #     executable='turtle1_goal_node',
+        #     name='turtle1_goal_node',
         # ),
+        Node(
+            package='turtlesim', 
+            executable='turtle_teleop_key',
+            name='teleop_turtle', 
+            output='screen',
+            prefix=['xterm -e'],
+            parameters=[config_path]
+        ),
     ])
