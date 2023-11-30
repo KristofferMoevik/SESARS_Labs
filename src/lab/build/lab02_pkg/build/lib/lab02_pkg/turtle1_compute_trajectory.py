@@ -1,5 +1,3 @@
-from lab02_interfaces.srv import ComputeTrajectory
-
 import rclpy
 from rclpy.node import Node
 import math
@@ -10,6 +8,7 @@ from geometry_msgs.msg import Point
 from turtlesim.action import RotateAbsolute
 from rclpy.action import ActionClient
 
+from lab02_interfaces.srv import ComputeTrajectory
 
 class ComputeTrajectoryService(Node):
 
@@ -21,7 +20,6 @@ class ComputeTrajectoryService(Node):
 
     def turtle_pose_subscriber_callback(self, msg):
         self.turtle_pose = msg
-
 
     def compute_trajectory_callback(self, request, response):
         def get_angle_pose_point(tur_x, tur_y, tur_theta, req_x, req_y):
@@ -36,8 +34,6 @@ class ComputeTrajectoryService(Node):
         self.get_logger().info("direction: " + str(response.direction) + "  distance: " + str(response.distance))
 
         return response
-
-    
 
 
 def main():
